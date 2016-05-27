@@ -234,7 +234,10 @@ class CheckoutSessionMixin(object):
             # It's unusual to get here as a shipping method should be set by
             # the time this skip-condition is called. In the absence of any
             # other evidence, we assume the shipping charge is zero.
-            shipping_charge = prices.Price(excl_tax=D('0.00'), tax=D('0.00'))
+            shipping_charge = prices.Price(
+                currency=request.basket.currency, excl_tax=D('0.00'),
+                tax=D('0.00')
+            )
         total = self.get_order_totals(request.basket, shipping_charge)
         if total.excl_tax == D('0.00'):
             raise exceptions.PassedSkipCondition(
@@ -246,7 +249,8 @@ class CheckoutSessionMixin(object):
     def get_context_data(self, **kwargs):
         # Use the proposed submission as template context data.  Flatten the
         # order kwargs so they are easily available too.
-        ctx = self.build_submission(**kwargs)
+        ctx = super(CheckoutSessionMixin, self).get_context_data()
+        ctx.update(self.build_submission(**kwargs))
         ctx.update(kwargs)
         ctx.update(ctx['order_kwargs'])
         return ctx
@@ -365,8 +369,7 @@ class CheckoutSessionMixin(object):
         to store billing address information. It's also possible to capture
         billing address information as part of the payment details forms, which
         never get stored in the session. In that circumstance, the billing
-        address can be set directly in the build_submission dict (see Oscar's
-        demo site for an example of this approach).
+        address can be set directly in the build_submission dict.
         """
         if not self.checkout_session.is_billing_address_set():
             return None
